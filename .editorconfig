@@ -1,0 +1,13 @@
+﻿[*.cs]
+
+# IDE0090: Use 'new(...)'
+dotnet_diagnostic.IDE0090.severity = silent
+
+# CA1304: Specify CultureInfo
+dotnet_diagnostic.CA1304.severity = none
+
+# IDE0017: Simplify object initialization
+dotnet_diagnostic.IDE0017.severity = silent
+
+# Default severity for all analyzer diagnostics
+dotnet_analyzer_diagnostic.severity = none

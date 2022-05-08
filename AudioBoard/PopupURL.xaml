@@ -1,0 +1,18 @@
+﻿<Window x:Class="AudioBoard.PopupURL"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AudioBoard"
+        mc:Ignorable="d"
+        Title="AudioBoard" Height="100" Width="515" Topmost="True" ResizeMode="NoResize" WindowStyle="SingleBorderWindow">
+    <Grid>
+        <Label Content="Enter URL of stream:" HorizontalAlignment="Left" Margin="9,5,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="textBoxURL" HorizontalAlignment="Left" Margin="13,32,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="405" InputScope="Url"/>
+        <Button Content="OK" HorizontalAlignment="Left" Margin="432,8,0,0" VerticalAlignment="Top" Width="56" Click="Button_Click" IsDefault="True"/>
+        <Label Content="Title:" HorizontalAlignment="Left" Margin="216,5,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="textBoxTitle" HorizontalAlignment="Left" Margin="256,9,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="162" InputScope="Default"/>
+        <Button Content="Cancel" HorizontalAlignment="Left" Margin="432,31,0,0" VerticalAlignment="Top" Width="56" Click="Button_Click" IsCancel="True"/>
+
+    </Grid>
+</Window>
