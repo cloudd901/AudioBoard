@@ -36,6 +36,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="PCA_ColorFadeCalculator">
+      <HintPath>..\..\PCA_ColorFadeCalculator\ColorFadeCalculator\bin\Release\PCA_ColorFadeCalculator.dll</HintPath>
+    </Reference>
     <Reference Include="PCA_HotkeyCommands_WPF">
       <HintPath>..\..\PCA_HotkeyCommands (WPF)\HotkeyCommands (WPF)\bin\Release\net5.0-windows\PCA_HotkeyCommands_WPF.dll</HintPath>
     </Reference>

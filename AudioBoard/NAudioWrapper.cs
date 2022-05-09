@@ -22,17 +22,21 @@ namespace AudioBoard
 
         public TimeSpan CurrentTime
         {
-            get { return MainOutputStream == null ? default : MainOutputStream.CurrentTime; }
+            get { return (MainMP3OutputStream == null && MainWAVOutputStream == null) ? default : MainMP3OutputStream != null ? MainMP3OutputStream.CurrentTime : MainWAVOutputStream.CurrentTime; }
             set
             {
-                if (MainOutputStream != null)
+                if (MainMP3OutputStream != null)
                 {
-                    MainOutputStream.CurrentTime = value;
+                    MainMP3OutputStream.CurrentTime = value;
+                }
+                else if (MainWAVOutputStream != null)
+                {
+                    MainWAVOutputStream.CurrentTime = value;
                 }
             }
         }
 
-        public int StreamBuffer = 3;
+        public int StreamBuffer = 5;
 
         public int DeviceNumber
         {
@@ -49,7 +53,7 @@ namespace AudioBoard
 
         public bool IsReady
         {
-            get { return (MainOutputStream != null || MainMemoryStream != null) && MainVolumeChannel != null; }
+            get { return ((MainMP3OutputStream != null || MainWAVOutputStream != null) || MainMemoryStream != null) && MainVolumeChannel != null; }
         }
 
         public bool IsStreaming
@@ -59,7 +63,7 @@ namespace AudioBoard
 
         public long Length
         {
-            get { return MainMemoryStream == null ? MainOutputStream == null ? -1 : MainOutputStream.Length : MainMemoryStream.Length; }
+            get { return MainMemoryStream == null ? (MainMP3OutputStream == null && MainWAVOutputStream == null) ? -1 : MainMP3OutputStream != null? MainMP3OutputStream.Length : MainWAVOutputStream.Length : MainMemoryStream.Length; }
         }
 
         public PlaybackState PlaybackState
@@ -69,7 +73,7 @@ namespace AudioBoard
 
         public long Position
         {
-            get { return MainMemoryStream == null ? MainOutputStream == null ? -1 : MainOutputStream.Position : MainMemoryStream.Position; }
+            get { return MainMemoryStream == null ? (MainMP3OutputStream == null && MainWAVOutputStream == null) ? -1 : MainMP3OutputStream != null ? MainMP3OutputStream.Position : MainWAVOutputStream.Position : MainMemoryStream.Position; }
             set
             {
                 if (MainMemoryStream != null)
@@ -86,26 +90,40 @@ namespace AudioBoard
 
                     MainMemoryStream.Position = temp;
                 }
-                else if (MainOutputStream != null)
+                else if (MainMP3OutputStream != null)
                 {
                     long temp = value;
-                    if (value > MainOutputStream.Length)
+                    if (value > MainMP3OutputStream.Length)
                     {
-                        temp = MainOutputStream.Length;
+                        temp = MainMP3OutputStream.Length;
                     }
                     else if (value < 0)
                     {
                         temp = 0;
                     }
 
-                    MainOutputStream.Position = temp;
+                    MainMP3OutputStream.Position = temp;
+                }
+                else if (MainWAVOutputStream != null)
+                {
+                    long temp = value;
+                    if (value > MainWAVOutputStream.Length)
+                    {
+                        temp = MainWAVOutputStream.Length;
+                    }
+                    else if (value < 0)
+                    {
+                        temp = 0;
+                    }
+
+                    MainWAVOutputStream.Position = temp;
                 }
             }
         }
 
         public TimeSpan TotalTime
         {
-            get { return MainMemoryStream == null ? MainOutputStream == null ? default : MainOutputStream.TotalTime : default; }
+            get { return MainMemoryStream == null ? (MainMP3OutputStream == null && MainWAVOutputStream == null) ? default : MainMP3OutputStream != null ? MainMP3OutputStream.TotalTime : MainWAVOutputStream.TotalTime : default; }
         }
 
         public float Volume
@@ -126,7 +144,8 @@ namespace AudioBoard
         private bool StopStream { get; set; } = false;
         private int deviceNumber { get; set; } = -1;
         private Stream MainMemoryStream { get; set; } = null;
-        private Mp3FileReader MainOutputStream { get; set; } = null;
+        private Mp3FileReader MainMP3OutputStream { get; set; } = null;
+        private WaveFileReader MainWAVOutputStream { get; set; } = null;
         private WaveChannel32 MainVolumeChannel { get; set; } = null;
         private Thread StreamThread { get; set; } = null;
 
@@ -139,12 +158,14 @@ namespace AudioBoard
             Position = 0;
 
             WavePlayer?.Dispose();
-            MainOutputStream?.Dispose();
+            MainWAVOutputStream?.Dispose();
+            MainMP3OutputStream?.Dispose();
             MainMemoryStream?.Dispose();
             MainVolumeChannel?.Dispose();
 
             WavePlayer = null;
-            MainOutputStream = null;
+            MainWAVOutputStream = null;
+            MainMP3OutputStream = null;
             MainMemoryStream = null;
             MainVolumeChannel = null;
         }
@@ -186,7 +207,7 @@ namespace AudioBoard
 
             StringBuilder data = new StringBuilder();
 
-            if (file.EndsWith("mp3", StringComparison.CurrentCultureIgnoreCase) && !file.StartsWith("http", StringComparison.CurrentCultureIgnoreCase))
+            if (!file.StartsWith("http", StringComparison.CurrentCultureIgnoreCase))
             {
                 string f = file;
                 if (f.Contains("|"))
@@ -203,8 +224,22 @@ namespace AudioBoard
 
                 if (File.Exists(f))
                 {
-                    MainOutputStream = new Mp3FileReader(f);
-                    MainOutputStream.Position = loc;
+
+                    if (f.EndsWith("wav", StringComparison.OrdinalIgnoreCase))
+                    {
+                        MainWAVOutputStream = new WaveFileReader(f);
+
+                        MainWAVOutputStream.Position = loc;
+
+
+
+                    }
+                    else if (f.EndsWith("mp3", StringComparison.OrdinalIgnoreCase))
+                    {
+                        MainMP3OutputStream = new Mp3FileReader(f);
+                        MainMP3OutputStream.Position = loc;
+
+                    }
 
                     TagLib.File tagFile = TagLib.File.Create(f);
                     string artist = tagFile.Tag.FirstAlbumArtist;
@@ -224,8 +259,8 @@ namespace AudioBoard
                 else
                 {
                     retString = "File does not exist.\r\n" + f;
-                    MainOutputStream = null;
                 }
+
             }
             else if (file.StartsWith("http", StringComparison.CurrentCultureIgnoreCase))
             {
@@ -346,14 +381,14 @@ namespace AudioBoard
                         Thread.Sleep(100);
                     }
 
-                    MainOutputStream = null;
+                    MainMP3OutputStream = null;
                     int trycnt = 0;
-                    while (MainOutputStream == null)
+                    while (MainMP3OutputStream == null)
                     {
                         try
                         {
-                            MainOutputStream = new Mp3FileReader(temp2);
-                            MainOutputStream.Position = loc;
+                            MainMP3OutputStream = new Mp3FileReader(temp2);
+                            MainMP3OutputStream.Position = loc;
                         }
                         catch (InvalidOperationException)
                         {
@@ -462,14 +497,14 @@ namespace AudioBoard
                         }
 
                         MainMemoryStream.Position = 0;
-                        MainOutputStream = null;
+                        MainMP3OutputStream = null;
                         int tries = 0;
-                        while (MainOutputStream == null)
+                        while (MainMP3OutputStream == null)
                         {
                             // Memorystream sometimes causes error if started too soon.
                             try
                             {
-                                MainOutputStream = new Mp3FileReader(MainMemoryStream);
+                                MainMP3OutputStream = new Mp3FileReader(MainMemoryStream);
                             }
                             catch (InvalidDataException)
                             {
@@ -488,18 +523,22 @@ namespace AudioBoard
                 }
             }
 
-            if (MainOutputStream == null)
+            if (MainMP3OutputStream == null && MainWAVOutputStream == null)
             {
                 Title = "Error Initializing Output\r\nUnable to load Stream.";
                 TitleMsgChanged?.Invoke();
                 return Title;
             }
 
-            MainVolumeChannel = new WaveChannel32(MainOutputStream);
-            MainVolumeChannel.Volume = volume;
+            MainVolumeChannel = new WaveChannel32(MainMP3OutputStream != null ? MainMP3OutputStream : MainWAVOutputStream)
+            {
+                Volume = volume
+            };
+
             try
             {
                 WavePlayer = NewPlayer();
+                WavePlayer.PlaybackStopped += WavePlayer_PlaybackStopped;
                 WavePlayer.Init(MainVolumeChannel);
             }
             catch (Exception initException)
@@ -549,7 +588,7 @@ namespace AudioBoard
             {
                 //ClearAudio();
                 StopStream = true;
-                WavePlayer.Stop();
+                WavePlayer?.Stop();
                 Position = 0;
             }
 

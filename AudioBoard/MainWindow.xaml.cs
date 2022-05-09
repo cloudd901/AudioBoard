@@ -2,6 +2,7 @@
 using NAudio.Wave;
 using PCAFFINITY;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -30,7 +31,7 @@ namespace AudioBoard
         public static int CurrentFile { get; set; } = 0;
         public static float MainVolume { get; set; } = 7.5f;
         public static string[] PlayFiles { get; } = new string[9];
-        public static double WindowColorSlide { get; set; } = 915;
+        public static double WindowColorSlide { get; set; } = 397;
         public static double WindowOpacitySlide { get; set; } = 0.95;
     }
 
@@ -40,14 +41,55 @@ namespace AudioBoard
     public partial class MainWindow : HotkeysExtensionWindow
     {
         private NAudioWrapper AudioPlayer = new NAudioWrapper();
-
+        List<System.Drawing.Color> BGColors = new List<System.Drawing.Color>();
         public MainWindow()
         {
+            ColorFadeCalculator cfc = new ColorFadeCalculator(System.Drawing.Color.LightPink, System.Drawing.Color.Red, 80);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.Red, System.Drawing.Color.DarkRed, 40);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.DarkRed, System.Drawing.Color.MediumPurple, 80);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.MediumPurple, System.Drawing.Color.Purple, 40);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.Purple, System.Drawing.Color.DarkBlue, 80);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.DarkBlue, System.Drawing.Color.Blue, 40);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.Blue, System.Drawing.Color.LightBlue, 40);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.LightBlue, System.Drawing.Color.LightGreen, 80);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.LightGreen, System.Drawing.Color.Green, 40);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.Green, System.Drawing.Color.DarkGreen, 40);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.DarkGreen, System.Drawing.Color.YellowGreen, 80);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.YellowGreen, System.Drawing.Color.Yellow, 40);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.Yellow, System.Drawing.Color.LightYellow, 40);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.LightYellow, System.Drawing.Color.Orange, 80);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.Orange, System.Drawing.Color.DarkOrange, 40);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.DarkOrange, System.Drawing.Color.OrangeRed, 40);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.OrangeRed, System.Drawing.Color.DarkRed, 40);
+            BGColors.AddRange(cfc.Steps);
+            cfc = new ColorFadeCalculator(System.Drawing.Color.DarkRed, System.Drawing.Color.Red, 40);
+            BGColors.AddRange(cfc.Steps);
+
+            GetSettings();
+
             InitializeComponent();
+
             MouseDown += Window_MouseDown;
             AudioPlayer.TitleMsgChanged += AudioPlayer_TitleMsgChanged;
             AudioPlayer.StreamBuffer = 4;
         }
+
 
         private void AudioPlayer_TitleMsgChanged()
         {
@@ -216,7 +258,13 @@ namespace AudioBoard
                 {
                     Play(AudioBoardPreferences.PlayFiles[index]);
                 }
-                else if (header.Contains("File"))
+                else if (header.Contains("Clear", StringComparison.Ordinal))
+                {
+                    (listBox1.SelectedItem as ListBoxItem).Content = $"Ctrl {index + 1} =";
+                    AudioBoardPreferences.PlayFiles[index] = "";
+                    SaveSettings((index + 1).ToString(), "", "Audio");
+                }
+                else if (header.Contains("File", StringComparison.Ordinal))
                 {
                     OpenFileDialog openFileDialog = new OpenFileDialog();
                     if (openFileDialog.ShowDialog() == true)
@@ -227,7 +275,7 @@ namespace AudioBoard
                         SaveSettings((index + 1).ToString(), line, "Audio");
                     }
                 }
-                else if (header.Contains("URL"))
+                else if (header.Contains("URL", StringComparison.Ordinal))
                 {
                     PopupURL popupURLDialog = new PopupURL();
                     if (popupURLDialog.ShowDialog() == true)
@@ -393,21 +441,7 @@ namespace AudioBoard
                 else
                 {
                     new Thread(() => AudioPlayer.Start()).Start();
-
-                        //// Set timer to start allows UI to update.
-                        //DispatcherTimer timer = new DispatcherTimer
-                        //{
-                        //    Interval = TimeSpan.FromSeconds(0.25)
-                        //};
-
-                        //timer.Tick += (o, e) =>
-                        //{
-                        //    timer.IsEnabled = false;
-                        //    AudioPlayer.Start();
-                        //};
-
-                        //timer.IsEnabled = true;
-                    }
+                }
             }
         }
 
@@ -428,20 +462,6 @@ namespace AudioBoard
         private void TrackPlay(int k)
         {
             new Thread(() => Play(AudioBoardPreferences.PlayFiles[k - 1], 0, true)).Start();
-
-            //// Set timer to start allows UI to update.
-            //DispatcherTimer timer = new DispatcherTimer
-            //{
-            //    Interval = TimeSpan.FromSeconds(0.25)
-            //};
-
-            //timer.Tick += (o, e) =>
-            //{
-            //    timer.IsEnabled = false;
-            //    Play(AudioBoardPreferences.PlayFiles[k - 1], 0, true);
-            //};
-
-            //timer.IsEnabled = true;
         }
 
         private void WavePlayer_PlaybackStopped(object sender, StoppedEventArgs e)
@@ -465,7 +485,7 @@ namespace AudioBoard
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            GetSettings();
+            
             GetAudios();
 
             for (int i = 1; i < 9; i++)
@@ -540,47 +560,41 @@ namespace AudioBoard
 
         private void ColorSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            byte[] values = BitConverter.GetBytes((int)e.NewValue);
-            if (!BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(values);
-            }
-
-            byte b = values[0];
-            byte g = values[1];
-            byte r = values[2];
-
-            Brush sb = new SolidColorBrush(Color.FromRgb(r, g, b));
+            System.Drawing.Color c = BGColors[(int)e.NewValue - 1];
+            Brush sb = new SolidColorBrush(System.Windows.Media.Color.FromArgb(c.A, c.R, c.G, c.B));
             sliderColor.Foreground = sb;
             sliderColor.Background = sb;
             this.Background = sb;
             SetOpacity(sliderOpacity.Value);
+            SaveSettings("ColorSlide", ((int)e.NewValue).ToString(), "Settings");
         }
 
         private void OpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             SetOpacity(e.NewValue);
+            SaveSettings("OpacitySlide", sliderOpacity.Value.ToString(), "Settings");
         }
 
         private void SliderColor_LostMouseCapture(object sender, MouseEventArgs e)
         {
-            SaveSettings("ColorSlide", sliderColor.Value.ToString(), "Settings");
+            
         }
 
         private void SliderOpacity_LostMouseCapture(object sender, MouseEventArgs e)
         {
-            SaveSettings("OpacitySlide", sliderOpacity.Value.ToString(), "Settings");
+            
         }
 
         private void trackBar1_LostMouseCapture(object sender, MouseEventArgs e)
         {
-            SaveSettings("Volume", trackBar1.Value.ToString(), "Settings");
+            
         }
 
         private void trackBar1_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             AudioBoardPreferences.MainVolume = (float)trackBar1.Value;
             AudioPlayer.Volume = AudioBoardPreferences.MainVolume / 10;
+            SaveSettings("Volume", trackBar1.Value.ToString(), "Settings");
         }
 
         private void TrackBar2_GotMouseCapture(object sender, MouseEventArgs e)
@@ -611,6 +625,14 @@ namespace AudioBoard
 
         private void BtnToggle_Click(object sender, RoutedEventArgs e)
         {
+            if (this.Height > 200)
+            {
+                this.Height = 116;
+            }
+            else
+            {
+                this.Height = 268;
+            }
         }
 
         private void BtnToggle_Copy_Click(object sender, RoutedEventArgs e)
@@ -641,6 +663,36 @@ namespace AudioBoard
         private void Button_Click_3(object sender, RoutedEventArgs e) // VolDn
         {
             PlayerAction(PlayerActions.VolumeDown);
+        }
+
+        private void trackBar2_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (!AudioPlayer.IsStreaming)
+            {
+                if (sender is Slider t)
+                {
+                    if (t.Value >= t.Maximum)
+                    {
+                        AudioPlayer.Stop();
+                    }
+                }
+            }
+        }
+
+        private void listBox1_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+
+        }
+
+        private void listBox1_MouseDoubleClick_1(object sender, MouseButtonEventArgs e)
+        {
+            int index = listBox1.SelectedIndex;
+            if (index == -1)
+            {
+                return;
+            }
+
+            Play(AudioBoardPreferences.PlayFiles[index]);
         }
 
         #endregion WindowButtonActions
